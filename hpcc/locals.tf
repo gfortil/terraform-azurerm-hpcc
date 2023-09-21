@@ -19,7 +19,7 @@ locals {
 
   tags = merge(var.metadata.additional_tags, { "owner" = var.owner.name, "owner_email" = var.owner.email })
 
-  # external_services_storage_exists = fileexists("${path.module}/modules/storage/data/config.json") || var.external_services_storage_config != null
+  # external_services_storage_exists = fileexists("../storage/data/config.json") || var.external_services_storage_config != null
 
   get_vnet_config    = fileexists("../vnet/data/config.json") ? jsondecode(file("../vnet/data/config.json")) : null
   get_aks_config     = fileexists("../aks/data/config.json") ? jsondecode(file("../aks/data/config.json")) : null
@@ -37,7 +37,7 @@ locals {
 
   domain = coalesce(var.internal_domain, format("us-%s.%s.azure.lnrsg.io", "var.metadata.product_name", "dev"))
 
-  internal_storage_enabled = local.external_storage_exists == true && var.ignore_external_storage == true ? true : local.external_storage_exists == true && var.ignore_external_storage == false ? false : true
+  internal_storage_enabled = (local.external_storage_exists == true) && (var.ignore_external_storage == true) ? true : local.external_storage_exists == true && var.ignore_external_storage == false ? false : true
   # external_services_storage_enabled = local.external_services_storage_exists == true && var.ignore_external_services_storage == false ? true : local.external_services_storage_exists == true && var.ignore_external_services_storage == true ? false : true
 
   hpcc_namespace = var.hpcc_namespace.existing_namespace != null ? var.hpcc_namespace.existing_namespace : var.hpcc_namespace.create_namespace == true ? kubernetes_namespace.hpcc[0].metadata[0].name : fileexists("${path.module}/logging/data/hpcc_namespace.txt") ? file("${path.module}/logging/data/hpcc_namespace.txt") : "default"
