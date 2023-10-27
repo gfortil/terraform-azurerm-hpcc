@@ -9,7 +9,14 @@ resource "kubernetes_namespace" "hpcc" {
 }
 
 module "hpcc" {
-  source = "github.com/gfortil/opinionated-terraform-azurerm-hpcc?ref=HPCC-27615"
+  # source = "github.com/gfortil/opinionated-terraform-azurerm-hpcc?ref=HPCC-27615"
+  source = "../../../opinionated/opinionated-terraform-azurerm-hpcc"
+
+  log_access_role_assignment = {
+    enabled   = true
+    scope     = null
+    object_id = null
+  }
 
   environment = var.metadata.environment
   productname = var.metadata.product_name
@@ -17,10 +24,12 @@ module "hpcc" {
   internal_domain = var.internal_domain
   cluster_name    = local.get_aks_config.cluster_name
 
+  node_tuning_containers = var.node_tuning_containers
+
   hpcc_container = {
-    image_name           = var.hpcc_container != null ? var.hpcc_container.image_name : null
-    image_root           = var.hpcc_container != null ? var.hpcc_container.image_root : null
-    version              = var.hpcc_container != null ? var.hpcc_container.version : null
+    image_name           = var.hpcc_container.image_name
+    image_root           = var.hpcc_container.image_root
+    version              = var.hpcc_container.version
     custom_chart_version = var.hpcc_container != null ? var.hpcc_container.custom_chart_version : null
     custom_image_version = var.hpcc_container != null ? var.hpcc_container.custom_image_version : null
   }
@@ -61,6 +70,8 @@ module "hpcc" {
           subnet_ids           = merge({ aks = local.subnet_ids.aks })
         }
       }
+      hpc_cache      = null
+      netapp_volumes = null
     } : null
 
     # external = local.internal_data_storage_enabled ? null : {
@@ -69,6 +80,8 @@ module "hpcc" {
     # }
     external = null
   }
+
+  enable_node_tuning = var.enable_node_tuning
 
   external_storage_config = local.external_storage_config
 
@@ -96,7 +109,7 @@ module "hpcc" {
 
   }
 
-  helm_chart_timeout         = var.helm_chart_timeout
-  helm_chart_files_overrides = concat(var.helm_chart_files_overrides, fileexists("${path.module}/modules/logging/data/logaccess_body.yaml") ? ["${path.module}/modules/logging/data/logaccess_body.yaml"] : [])
-  ldap_config                = var.ldap_config
+  helm_chart_timeout = var.helm_chart_timeout
+  # helm_chart_files_overrides = concat(var.helm_chart_files_overrides, fileexists("${path.module}/modules/logging/data/logaccess_body.yaml") ? ["${path.module}/modules/logging/data/logaccess_body.yaml"] : [])
+  ldap_config = var.ldap_config
 }

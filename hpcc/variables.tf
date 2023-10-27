@@ -146,14 +146,20 @@ variable "helm_chart_timeout" {
 variable "hpcc_container" {
   description = "HPCC container information (if version is set to null helm chart version is used)."
   type = object({
-    image_name           = optional(string)
-    image_root           = optional(string)
-    version              = optional(string)
+    image_name           = optional(string, "platform-core")
+    image_root           = optional(string, "hpccsystems")
+    version              = optional(string, "latest")
     custom_chart_version = optional(string)
     custom_image_version = optional(string)
   })
 
-  default = null
+  default = {
+    image_name           = "platform-core"
+    image_root           = "hpccsystems"
+    version              = "latest"
+    custom_chart_version = null
+    custom_image_version = null
+  }
 }
 
 variable "hpcc_container_registry_auth" {
@@ -166,43 +172,58 @@ variable "hpcc_container_registry_auth" {
   sensitive = true
 }
 
+variable "node_tuning_containers" {
+  description = "URIs for containers to be used by node tuning submodule."
+  type = object({
+    busybox = string
+    debian  = string
+  })
+  default = null
+}
+
+variable "enable_node_tuning" {
+  description = "Enable node tuning daemonset (only needed once per AKS cluster)."
+  type        = bool
+  default     = false
+}
+
 variable "vault_config" {
   description = "Input for vault secrets."
   type = object({
-    git = map(object({
+    git = optional(map(object({
       name            = optional(string)
       url             = optional(string)
       kind            = optional(string)
       vault_namespace = optional(string)
       role_id         = optional(string)
       secret_name     = optional(string) # Should match the secret name created in the corresponding vault_secrets variable
-    })),
-    ecl = map(object({
+    }))),
+    ecl = optional(map(object({
       name            = optional(string)
       url             = optional(string)
       kind            = optional(string)
       vault_namespace = optional(string)
       role_id         = optional(string)
       secret_name     = optional(string) # Should match the secret name created in the corresponding vault_secrets variable
-    })),
-    ecluser = map(object({
+    }))),
+    ecluser = optional(map(object({
       name            = optional(string)
       url             = optional(string)
       kind            = optional(string)
       vault_namespace = optional(string)
       role_id         = optional(string)
       secret_name     = optional(string) # Should match the secret name created in the corresponding vault_secrets variable
-    }))
-    esp = map(object({
+    }))),
+    esp = optional(map(object({
       name            = optional(string)
       url             = optional(string)
       kind            = optional(string)
       vault_namespace = optional(string)
       role_id         = optional(string)
       secret_name     = optional(string) # Should match the secret name created in the corresponding vault_secrets variable
-    }))
+    })))
   })
-  default = null
+  default = {}
 }
 
 ## Roxie Config
@@ -210,290 +231,147 @@ variable "vault_config" {
 variable "roxie_config" {
   description = "Configuration for Roxie(s)."
   type = list(object({
-    disabled                       = bool
-    name                           = string
-    nodeSelector                   = map(string)
-    numChannels                    = number
-    prefix                         = string
-    replicas                       = number
-    serverReplicas                 = number
-    acePoolSize                    = number
-    actResetLogPeriod              = number
-    affinity                       = number
-    allFilesDynamic                = bool
-    blindLogging                   = bool
-    blobCacheMem                   = number
-    callbackRetries                = number
-    callbackTimeout                = number
-    checkCompleted                 = bool
-    checkPrimaries                 = bool
-    checkFileDate                  = bool
-    clusterWidth                   = number
-    copyResources                  = bool
-    coresPerQuery                  = number
-    crcResources                   = bool
-    dafilesrvLookupTimeout         = number
-    debugPermitted                 = bool
-    defaultConcatPreload           = number
-    defaultFetchPreload            = number
-    defaultFullKeyedJoinPreload    = number
-    defaultHighPriorityTimeLimit   = number
-    defaultHighPriorityTimeWarning = number
-    defaultKeyedJoinPreload        = number
-    defaultLowPriorityTimeLimit    = number
-    defaultLowPriorityTimeWarning  = number
-    defaultMemoryLimit             = number
-    defaultParallelJoinPreload     = number
-    defaultPrefetchProjectPreload  = number
-    defaultSLAPriorityTimeLimit    = number
-    defaultSLAPriorityTimeWarning  = number
-    defaultStripLeadingWhitespace  = bool
-    diskReadBufferSize             = number
-    doIbytiDelay                   = bool
-    egress                         = string
-    enableHeartBeat                = bool
-    enableKeyDiff                  = bool
-    enableSysLog                   = bool
-    fastLaneQueue                  = bool
-    fieldTranslationEnabled        = string
-    flushJHtreeCacheOnOOM          = bool
-    forceStdLog                    = bool
-    highTimeout                    = number
-    ignoreMissingFiles             = bool
-    indexReadChunkSize             = number
-    initIbytiDelay                 = number
-    jumboFrames                    = bool
-    lazyOpen                       = bool
-    leafCacheMem                   = number
-    linuxYield                     = bool
-    localFilesExpire               = number
-    localSlave                     = bool
-    logFullQueries                 = bool
-    logQueueDrop                   = number
-    logQueueLen                    = number
-    lowTimeout                     = number
-    maxBlockSize                   = number
-    maxHttpConnectionRequests      = number
-    maxLocalFilesOpen              = number
-    maxLockAttempts                = number
-    maxRemoteFilesOpen             = number
-    memTraceLevel                  = number
-    memTraceSizeLimit              = number
-    memoryStatsInterval            = number
-    minFreeDiskSpace               = number
-    minIbytiDelay                  = number
-    minLocalFilesOpen              = number
-    minRemoteFilesOpen             = number
-    miscDebugTraceLevel            = number
-    monitorDaliFileServer          = bool
-    nodeCacheMem                   = number
-    nodeCachePreload               = bool
-    parallelAggregate              = number
-    parallelLoadQueries            = number
-    perChannelFlowLimit            = number
-    pingInterval                   = number
-    preabortIndexReadsThreshold    = number
-    preabortKeyedJoinsThreshold    = number
-    preloadOnceData                = bool
-    prestartSlaveThreads           = bool
-    remoteFilesExpire              = number
-    roxieMulticastEnabled          = bool
-    serverSideCacheSize            = number
-    serverThreads                  = number
-    simpleLocalKeyedJoins          = bool
-    sinkMode                       = string
-    slaTimeout                     = number
-    slaveConfig                    = string
-    slaveThreads                   = number
-    soapTraceLevel                 = number
-    socketCheckInterval            = number
-    statsExpiryTime                = number
-    systemMonitorInterval          = number
-    traceLevel                     = number
-    traceRemoteFiles               = bool
-    totalMemoryLimit               = string
-    trapTooManyActiveQueries       = bool
-    udpAdjustThreadPriorities      = bool
-    udpFlowAckTimeout              = number
-    udpFlowSocketsSize             = number
-    udpInlineCollation             = bool
-    udpInlineCollationPacketLimit  = number
-    udpLocalWriteSocketSize        = number
-    udpMaxPermitDeadTimeouts       = number
-    udpMaxRetryTimedoutReqs        = number
-    udpMaxSlotsPerClient           = number
-    udpMulticastBufferSize         = number
-    udpOutQsPriority               = number
-    udpQueueSize                   = number
-    udpRecvFlowTimeout             = number
-    udpRequestToSendAckTimeout     = number
-    udpResendTimeout               = number
-    udpRequestToSendTimeout        = number
-    udpResendEnabled               = bool
-    udpRetryBusySenders            = number
-    udpSendCompletedInData         = bool
-    udpSendQueueSize               = number
-    udpSnifferEnabled              = bool
-    udpTraceLevel                  = number
-    useAeron                       = bool
-    useDynamicServers              = bool
-    useHardLink                    = bool
-    useLogQueue                    = bool
-    useRemoteResources             = bool
-    useMemoryMappedIndexes         = bool
-    useTreeCopy                    = bool
-    services = list(object({
-      name        = string
-      servicePort = number
-      listenQueue = number
-      numThreads  = number
-      visibility  = string
-      annotations = optional(map(string))
-    }))
-    topoServer = object({
-      replicas = number
-    })
-    channelResources = object({
-      cpu    = string
-      memory = string
-    })
-  }))
-
-  default = [
-    {
-      disabled                       = false
-      name                           = "roxie"
-      nodeSelector                   = {}
-      numChannels                    = 2
-      prefix                         = "roxie"
-      replicas                       = 2
-      serverReplicas                 = 0
-      acePoolSize                    = 6
-      actResetLogPeriod              = 0
-      affinity                       = 0
-      allFilesDynamic                = false
-      blindLogging                   = false
-      blobCacheMem                   = 0
-      callbackRetries                = 3
-      callbackTimeout                = 500
-      checkCompleted                 = true
-      checkFileDate                  = false
-      checkPrimaries                 = true
-      clusterWidth                   = 1
-      copyResources                  = true
-      coresPerQuery                  = 0
-      crcResources                   = false
-      dafilesrvLookupTimeout         = 10000
-      debugPermitted                 = true
-      defaultConcatPreload           = 0
-      defaultFetchPreload            = 0
-      defaultFullKeyedJoinPreload    = 0
-      defaultHighPriorityTimeLimit   = 0
-      defaultHighPriorityTimeWarning = 30000
-      defaultKeyedJoinPreload        = 0
-      defaultLowPriorityTimeLimit    = 0
-      defaultLowPriorityTimeWarning  = 90000
-      defaultMemoryLimit             = 1073741824
-      defaultParallelJoinPreload     = 0
-      defaultPrefetchProjectPreload  = 10
-      defaultSLAPriorityTimeLimit    = 0
-      defaultSLAPriorityTimeWarning  = 30000
-      defaultStripLeadingWhitespace  = false
-      diskReadBufferSize             = 65536
-      doIbytiDelay                   = true
-      egress                         = "engineEgress"
-      enableHeartBeat                = false
-      enableKeyDiff                  = false
-      enableSysLog                   = false
-      fastLaneQueue                  = true
-      fieldTranslationEnabled        = "payload"
-      flushJHtreeCacheOnOOM          = true
-      forceStdLog                    = false
-      highTimeout                    = 2000
-      ignoreMissingFiles             = false
-      indexReadChunkSize             = 60000
-      initIbytiDelay                 = 10
-      jumboFrames                    = false
-      lazyOpen                       = true
-      leafCacheMem                   = 500
-      linuxYield                     = false
-      localFilesExpire               = 1
-      localSlave                     = false
-      logFullQueries                 = false
-      logQueueDrop                   = 32
-      logQueueLen                    = 512
-      lowTimeout                     = 10000
-      maxBlockSize                   = 1000000000
-      maxHttpConnectionRequests      = 1
-      maxLocalFilesOpen              = 4000
-      maxLockAttempts                = 5
-      maxRemoteFilesOpen             = 100
-      memTraceLevel                  = 1
-      memTraceSizeLimit              = 0
-      memoryStatsInterval            = 60
-      minFreeDiskSpace               = 6442450944
-      minIbytiDelay                  = 2
-      minLocalFilesOpen              = 2000
-      minRemoteFilesOpen             = 50
-      miscDebugTraceLevel            = 0
-      monitorDaliFileServer          = false
-      nodeCacheMem                   = 1000
-      nodeCachePreload               = false
-      parallelAggregate              = 0
-      parallelLoadQueries            = 1
-      perChannelFlowLimit            = 50
-      pingInterval                   = 0
-      preabortIndexReadsThreshold    = 100
-      preabortKeyedJoinsThreshold    = 100
-      preloadOnceData                = true
-      prestartSlaveThreads           = false
-      remoteFilesExpire              = 3600
-      roxieMulticastEnabled          = false
-      serverSideCacheSize            = 0
-      serverThreads                  = 100
-      simpleLocalKeyedJoins          = true
-      sinkMode                       = "sequential"
-      slaTimeout                     = 2000
-      slaveConfig                    = "simple"
-      slaveThreads                   = 30
-      soapTraceLevel                 = 1
-      socketCheckInterval            = 5000
-      statsExpiryTime                = 3600
-      systemMonitorInterval          = 60000
-      totalMemoryLimit               = "5368709120"
-      traceLevel                     = 1
-      traceRemoteFiles               = false
-      trapTooManyActiveQueries       = true
-      udpAdjustThreadPriorities      = true
-      udpFlowAckTimeout              = 10
-      udpFlowSocketsSize             = 33554432
-      udpInlineCollation             = true
-      udpInlineCollationPacketLimit  = 50
-      udpLocalWriteSocketSize        = 16777216
-      udpMaxPermitDeadTimeouts       = 100
-      udpMaxRetryTimedoutReqs        = 10
-      udpMaxSlotsPerClient           = 100
-      udpMulticastBufferSize         = 33554432
-      udpOutQsPriority               = 5
-      udpQueueSize                   = 1000
-      udpRecvFlowTimeout             = 2000
-      udpRequestToSendAckTimeout     = 500
-      udpResendTimeout               = 100
-      udpRequestToSendTimeout        = 2000
-      udpResendEnabled               = true
-      udpRetryBusySenders            = 0
-      udpSendCompletedInData         = false
-      udpSendQueueSize               = 500
-      udpSnifferEnabled              = false
-      udpTraceLevel                  = 0
-      useAeron                       = false
-      useDynamicServers              = false
-      useHardLink                    = false
-      useLogQueue                    = true
-      useMemoryMappedIndexes         = false
-      useRemoteResources             = false
-      useTreeCopy                    = false
-      services = [
+    disabled                       = optional(bool, true)
+    name                           = optional(string, "roxie")
+    nodeSelector                   = optional(map(string), { workload = "roxiepool" })
+    numChannels                    = optional(number, 2)
+    prefix                         = optional(string, "roxie")
+    replicas                       = optional(number, 2)
+    serverReplicas                 = optional(number, 0)
+    acePoolSize                    = optional(number, 6)
+    actResetLogPeriod              = optional(number, 0)
+    affinity                       = optional(number, 0)
+    allFilesDynamic                = optional(bool, false)
+    blindLogging                   = optional(bool, false)
+    blobCacheMem                   = optional(number, 0)
+    callbackRetries                = optional(number, 3)
+    callbackTimeout                = optional(number, 500)
+    checkCompleted                 = optional(bool, true)
+    checkFileDate                  = optional(bool, false)
+    checkPrimaries                 = optional(bool, true)
+    clusterWidth                   = optional(number, 1)
+    copyResources                  = optional(bool, true)
+    coresPerQuery                  = optional(number, 0)
+    crcResources                   = optional(bool, false)
+    dafilesrvLookupTimeout         = optional(number, 10000)
+    debugPermitted                 = optional(bool, true)
+    defaultConcatPreload           = optional(number, 0)
+    defaultFetchPreload            = optional(number, 0)
+    defaultFullKeyedJoinPreload    = optional(number, 0)
+    defaultHighPriorityTimeLimit   = optional(number, 0)
+    defaultHighPriorityTimeWarning = optional(number, 30000)
+    defaultKeyedJoinPreload        = optional(number, 0)
+    defaultLowPriorityTimeLimit    = optional(number, 0)
+    defaultLowPriorityTimeWarning  = optional(number, 90000)
+    defaultMemoryLimit             = optional(number, 1073741824)
+    defaultParallelJoinPreload     = optional(number, 0)
+    defaultPrefetchProjectPreload  = optional(number, 10)
+    defaultSLAPriorityTimeLimit    = optional(number, 0)
+    defaultSLAPriorityTimeWarning  = optional(number, 30000)
+    defaultStripLeadingWhitespace  = optional(bool, false)
+    diskReadBufferSize             = optional(number, 65536)
+    doIbytiDelay                   = optional(bool, true)
+    egress                         = optional(string, "engineEgress")
+    enableHeartBeat                = optional(bool, false)
+    enableKeyDiff                  = optional(bool, false)
+    enableSysLog                   = optional(bool, false)
+    fastLaneQueue                  = optional(bool, true)
+    fieldTranslationEnabled        = optional(string, "payload")
+    flushJHtreeCacheOnOOM          = optional(bool, true)
+    forceStdLog                    = optional(bool, false)
+    highTimeout                    = optional(number, 2000)
+    ignoreMissingFiles             = optional(bool, false)
+    indexReadChunkSize             = optional(number, 60000)
+    initIbytiDelay                 = optional(number, 10)
+    jumboFrames                    = optional(bool, false)
+    lazyOpen                       = optional(bool, true)
+    leafCacheMem                   = optional(number, 500)
+    linuxYield                     = optional(bool, false)
+    localFilesExpire               = optional(number, 1)
+    localSlave                     = optional(bool, false)
+    logFullQueries                 = optional(bool, false)
+    logQueueDrop                   = optional(number, 32)
+    logQueueLen                    = optional(number, 512)
+    lowTimeout                     = optional(number, 10000)
+    maxBlockSize                   = optional(number, 1000000000)
+    maxHttpConnectionRequests      = optional(number, 1)
+    maxLocalFilesOpen              = optional(number, 4000)
+    maxLockAttempts                = optional(number, 5)
+    maxRemoteFilesOpen             = optional(number, 100)
+    memTraceLevel                  = optional(number, 1)
+    memTraceSizeLimit              = optional(number, 0)
+    memoryStatsInterval            = optional(number, 60)
+    minFreeDiskSpace               = optional(number, 6442450944)
+    minIbytiDelay                  = optional(number, 2)
+    minLocalFilesOpen              = optional(number, 2000)
+    minRemoteFilesOpen             = optional(number, 50)
+    miscDebugTraceLevel            = optional(number, 0)
+    monitorDaliFileServer          = optional(bool, false)
+    nodeCacheMem                   = optional(number, 1000)
+    nodeCachePreload               = optional(bool, false)
+    parallelAggregate              = optional(number, 0)
+    parallelLoadQueries            = optional(number, 1)
+    perChannelFlowLimit            = optional(number, 50)
+    pingInterval                   = optional(number, 0)
+    preabortIndexReadsThreshold    = optional(number, 100)
+    preabortKeyedJoinsThreshold    = optional(number, 100)
+    preloadOnceData                = optional(bool, true)
+    prestartSlaveThreads           = optional(bool, false)
+    remoteFilesExpire              = optional(number, 3600)
+    roxieMulticastEnabled          = optional(bool, false)
+    serverSideCacheSize            = optional(number, 0)
+    serverThreads                  = optional(number, 100)
+    simpleLocalKeyedJoins          = optional(bool, true)
+    sinkMode                       = optional(string, "sequential")
+    slaTimeout                     = optional(number, 2000)
+    slaveConfig                    = optional(string, "simple")
+    slaveThreads                   = optional(number, 30)
+    soapTraceLevel                 = optional(number, 1)
+    socketCheckInterval            = optional(number, 5000)
+    statsExpiryTime                = optional(number, 3600)
+    systemMonitorInterval          = optional(number, 60000)
+    totalMemoryLimit               = optional(string, "5368709120")
+    traceLevel                     = optional(number, 1)
+    traceRemoteFiles               = optional(bool, false)
+    trapTooManyActiveQueries       = optional(bool, true)
+    udpAdjustThreadPriorities      = optional(bool, true)
+    udpFlowAckTimeout              = optional(number, 10)
+    udpFlowSocketsSize             = optional(number, 33554432)
+    udpInlineCollation             = optional(bool, true)
+    udpInlineCollationPacketLimit  = optional(number, 50)
+    udpLocalWriteSocketSize        = optional(number, 16777216)
+    udpMaxPermitDeadTimeouts       = optional(number, 100)
+    udpMaxRetryTimedoutReqs        = optional(number, 10)
+    udpMaxSlotsPerClient           = optional(number, 100)
+    udpMulticastBufferSize         = optional(number, 33554432)
+    udpOutQsPriority               = optional(number, 5)
+    udpQueueSize                   = optional(number, 1000)
+    udpRecvFlowTimeout             = optional(number, 2000)
+    udpRequestToSendAckTimeout     = optional(number, 500)
+    udpResendTimeout               = optional(number, 100)
+    udpRequestToSendTimeout        = optional(number, 2000)
+    udpResendEnabled               = optional(bool, true)
+    udpRetryBusySenders            = optional(number, 0)
+    udpSendCompletedInData         = optional(bool, false)
+    udpSendQueueSize               = optional(number, 500)
+    udpSnifferEnabled              = optional(bool, false)
+    udpTraceLevel                  = optional(number, 0)
+    useAeron                       = optional(bool, false)
+    useDynamicServers              = optional(bool, false)
+    useHardLink                    = optional(bool, false)
+    useLogQueue                    = optional(bool, true)
+    useMemoryMappedIndexes         = optional(bool, false)
+    useRemoteResources             = optional(bool, false)
+    useTreeCopy                    = optional(bool, false)
+    services = optional(list(object({
+      name        = optional(string, "roxie")
+      servicePort = optional(number, 9876)
+      listenQueue = optional(number, 200)
+      numThreads  = optional(number, 30)
+      visibility  = optional(string, "local")
+      annotations = optional(map(string), {})
+      })),
+      [
         {
           name        = "roxie"
           servicePort = 9876
@@ -503,15 +381,35 @@ variable "roxie_config" {
           annotations = {}
         }
       ]
-      topoServer = {
+    )
+    topoServer = optional(object({
+      replicas = optional(number, 1)
+      }),
+      {
         replicas = 1
       }
-      channelResources = {
+    )
+    channelResources = optional(object({
+      cpu    = optional(string, "1")
+      memory = optional(string, "4G")
+      }),
+      {
         cpu    = "1"
         memory = "4G"
       }
-    }
-  ]
+    )
+    resources = optional(object({
+      cpu    = optional(string, "1")
+      memory = optional(string, "4G")
+      }),
+      {
+        cpu    = "1"
+        memory = "4G"
+      }
+    )
+  }))
+
+  default = [{}]
 }
 
 ## Thor Config
@@ -922,22 +820,24 @@ variable "install_blob_csi_driver" {
 variable "spill_volumes" {
   description = "Map of objects to create Spill Volumes"
   type = map(object({
-    name          = string # "Name of spill volume to be created."
-    size          = number # "Size of spill volume to be created (in GB)."
-    prefix        = string # "Prefix of spill volume to be created."
-    host_path     = string # "Host path on spill volume to be created."
-    storage_class = string # "Storage class of spill volume to be used."
-    access_mode   = string # "Access mode of spill volume to be used."
+    name      = string # "Name of spill volume to be created."
+    size      = number # "Size of spill volume to be created (in GB)."
+    prefix    = string # "Prefix of spill volume to be created."
+    host_path = string # "Host path on spill volume to be created."
+    expert_settings = object({
+      validatePlaneScript = list(string)
+    })
   }))
 
   default = {
     "spill" = {
-      name          = "spill"
-      size          = 300
-      prefix        = "/var/lib/HPCCSystems/spill"
-      host_path     = "/mnt"
-      storage_class = "spill"
-      access_mode   = "ReadWriteOnce"
+      name      = "spill"
+      size      = 300
+      prefix    = "/var/lib/HPCCSystems/spill"
+      host_path = "/mnt"
+      expert_settings = {
+        validatePlaneScript = ["exit 0"]
+      }
     }
   }
 }
@@ -945,21 +845,64 @@ variable "spill_volumes" {
 variable "data_storage_config" {
   description = "Data plane config for HPCC."
   type = object({
-    internal = optional(object({
+    internal = object({
       blob_nfs = object({
         data_plane_count = number
         storage_account_settings = object({
           # authorized_ip_ranges                 = map(string)
-          delete_protection = bool
-          replication_type  = string
-          # subnet_ids                           = map(string)
+          delete_protection                    = bool
+          replication_type                     = string
+          subnet_ids                           = map(string)
           blob_soft_delete_retention_days      = optional(number)
           container_soft_delete_retention_days = optional(number)
         })
       })
-    }))
-
-    external = optional(object({
+      netapp_volumes = object({
+        use_as_index_build_plane = bool
+        plane_name               = string
+        netapp_account = optional(object({
+          ad_dns_servers         = list(string)
+          ad_domain_name         = string
+          smb_server_name        = string
+          ad_admin_username      = string
+          ad_admin_password      = string
+          ad_organizational_unit = string
+        }))
+        netapp_capacity_pool = optional(object({
+          service_level = string
+          size_in_tb    = number
+          qos_type      = string
+        }))
+        netapp_volume_nfs = optional(object({
+          volume_count        = number
+          zone                = number
+          path                = string
+          service_level       = string
+          subnet_id           = string
+          storage_quota_in_gb = number
+          allowed_clients     = list(string)
+        }))
+      })
+      hpc_cache = object({
+        cache_update_frequency = string
+        dns = object({
+          zone_name                = string
+          zone_resource_group_name = string
+        })
+        resource_provider_object_id = string
+        size                        = string
+        storage_account_data_planes = list(object({
+          container_id         = string
+          container_name       = string
+          id                   = number
+          resource_group_name  = string
+          storage_account_id   = string
+          storage_account_name = string
+        }))
+        subnet_id = string
+      })
+    })
+    external = object({
       blob_nfs = list(object({
         container_id         = string
         container_name       = string
@@ -967,6 +910,11 @@ variable "data_storage_config" {
         resource_group_name  = string
         storage_account_id   = string
         storage_account_name = string
+      }))
+      hpc_cache = list(object({
+        id     = string
+        path   = string
+        server = string
       }))
       hpcc = list(object({
         name = string
@@ -976,26 +924,33 @@ variable "data_storage_config" {
         }))
         service = string
       }))
-    }))
+    })
   })
+  default = {
+    internal = {
+      blob_nfs = {
+        data_plane_count = 1
+        storage_account_settings = {
+          # authorized_ip_ranges                 = {}
+          delete_protection                    = false
+          replication_type                     = "ZRS"
+          subnet_ids                           = {}
+          blob_soft_delete_retention_days      = 7
+          container_soft_delete_retention_days = 7
+        }
+      }
+      hpc_cache      = null
+      netapp_volumes = null
+    }
+    external = null
+  }
 
-  default = null
-  # default = {
-  #   internal = {
-  #     blob_nfs = {
-  #       data_plane_count = 1
-  #       storage_account_settings = {
-  #         # authorized_ip_ranges                 = {}
-  #         delete_protection = false
-  #         replication_type  = "ZRS"
-  #         # subnet_ids                           = {}
-  #         blob_soft_delete_retention_days      = 7
-  #         container_soft_delete_retention_days = 7
-  #       }
-  #     }
-  #   }
-  #   external = null
-  # }
+  validation {
+    condition = (var.data_storage_config.internal == null ? true :
+      var.data_storage_config.internal.hpc_cache == null ? true :
+    contains(["never", "30s", "3h"], var.data_storage_config.internal.hpc_cache.cache_update_frequency))
+    error_message = "HPC Cache update frequency must be \"never\", \"30s\" or \"3h\"."
+  }
 }
 
 variable "external_storage_config" {

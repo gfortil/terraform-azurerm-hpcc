@@ -1,10 +1,10 @@
 resource "azurerm_automation_account" "automation_account" {
-  name                = var.aks_automation.automation_account_name
-  location            = local.location
-  resource_group_name = module.resource_groups["azure_kubernetes_service"].name
-  sku_name            = var.sku_name
-  tags                = local.tags
-  # local_authentication_enabled  = var.aks_automation.local_authentication_enabled
+  name                          = var.aks_automation.automation_account_name
+  location                      = local.location
+  resource_group_name           = module.resource_groups["azure_kubernetes_service"].name
+  sku_name                      = var.sku_name
+  tags                          = local.tags
+  local_authentication_enabled  = var.aks_automation.local_authentication_enabled
   public_network_access_enabled = var.aks_automation.public_network_access_enabled
 
   identity {

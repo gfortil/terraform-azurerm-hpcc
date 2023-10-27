@@ -33,6 +33,11 @@ auto_launch_svc = {
 #   SUBSCRIPTION_ID = ""
 # }
 
+node_tuning_containers = {
+  busybox = "busybox:latest"
+  debian  = "debian:bullseye-slim"
+}
+
 # hpcc_container = {
 #   version = "9.2.0"
 #   image_name    = "platform-core-ln"

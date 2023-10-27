@@ -13,11 +13,10 @@ metadata = {
   resource_group_type = "app"
   sre_team            = "hpccplatform"
   subscription_type   = "dev"
-  additional_tags     = { "justification" = "testing" }
+  additional_tags     = { "justification" = "testing", "enclosed resource" = "oss storage" }
   location            = "eastus" # Acceptable values: eastus, centralus
 }
 
 # disable_naming_conventions = false # true will enforce all the arguments of the metadata block above
 
 # Provide an existing virtual network deployed outside of this project
-
