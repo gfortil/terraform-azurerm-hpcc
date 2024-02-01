@@ -1,6 +1,6 @@
-cluster_version            = "1.25"
+cluster_version            = "1.26.10"
 cluster_ordinal            = 1 //cluster name suffix
-sku_tier                   = "free"
+sku_tier                   = "FREE"
 dns_resource_group         = "app-dns-prod-eastus2"
 internal_domain            = "my-dns-zone.io"
 hpcc_log_analytics_enabled = false

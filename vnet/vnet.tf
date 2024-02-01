@@ -30,7 +30,7 @@ module "virtual_network" {
           }
           local-vnet-10-1-0-0-21 = {
             address_prefix = "10.0.0.0/24"
-            next_hop_type  = "vnetlocal"
+            next_hop_type  = "VnetLocal"
           }
         }
       }

@@ -17,18 +17,18 @@ variable "owner" {
   }
 }
 
-# variable "azure_auth" {
-#   description = "Azure authentication"
-#   type = object({
-#     AAD_CLIENT_ID     = optional(string)
-#     AAD_CLIENT_SECRET = optional(string)
-#     AAD_TENANT_ID     = optional(string)
-#     AAD_PRINCIPAL_ID  = optional(string)
-#     SUBSCRIPTION_ID   = string
-#   })
+variable "azure_auth" {
+  description = "Azure authentication"
+  type = object({
+    AAD_CLIENT_ID     = optional(string)
+    AAD_CLIENT_SECRET = optional(string)
+    AAD_TENANT_ID     = optional(string)
+    AAD_OBJECT_ID     = optional(string)
+    SUBSCRIPTION_ID   = string
+  })
 
-#   nullable = false
-# }
+  nullable = false
+}
 
 variable "auto_connect" {
   description = "Automatically connect to the Kubernetes cluster from the host machine by overwriting the current context."
@@ -132,14 +132,14 @@ variable "cluster_version" {
 }
 
 variable "sku_tier" {
-  description = "Pricing tier for the Azure Kubernetes Service managed cluster; \"free\" & \"paid\" are supported. For production clusters or clusters with more than 10 nodes this should be set to \"paid\"."
+  description = "Pricing tier for the Azure Kubernetes Service managed cluster; \"FREE\" & \"STANDARD\" are supported. For production clusters or clusters with more than 10 nodes this should be set to \"STANDARD\"."
   type        = string
   nullable    = false
-  default     = "free"
+  default     = "FREE"
 
   validation {
-    condition     = contains(["free", "paid"], var.sku_tier)
-    error_message = "Available SKU tiers are \"free\" or \"paid\"."
+    condition     = contains(["FREE", "STANDARD"], var.sku_tier)
+    error_message = "Available SKU tiers are \"FREE\" or \"STANDARD\"."
   }
 }
 
@@ -154,33 +154,105 @@ variable "rbac_bindings" {
   default  = {}
 }
 
+variable "system_nodes" {
+  description = "System node group to configure."
+  type = object({
+    node_arch         = optional(string, "amd64")
+    node_size         = optional(string, "xlarge")
+    node_type_version = optional(string, "v1")
+    min_capacity      = optional(number, 3)
+  })
+  nullable = false
+  default  = {}
+
+  validation {
+    condition     = contains(["amd64", "arm64"], var.system_nodes.node_arch)
+    error_message = "Node group architecture must be either \"amd64\" or \"arm64\"."
+  }
+
+  validation {
+    condition     = (var.system_nodes.min_capacity > 0)
+    error_message = "System node group min capacity must be 0 or more."
+  }
+}
+
 variable "node_groups" {
   description = "Node groups to configure."
   type = map(object({
-    node_arch           = optional(string)
-    node_os             = optional(string)
-    node_type           = optional(string)
-    node_type_variant   = optional(string)
-    node_type_version   = optional(string)
+    node_arch           = optional(string, "amd64")
+    node_os             = optional(string, "ubuntu")
+    node_type           = optional(string, "gp")
+    node_type_variant   = optional(string, "default")
+    node_type_version   = optional(string, "v1")
     node_size           = string
-    single_group        = optional(bool)
-    min_capacity        = optional(number)
+    ultra_ssd           = optional(bool, false)
+    os_disk_size        = optional(number, 128)
+    temp_disk_mode      = optional(string, "NONE")
+    nvme_mode           = optional(string, "NONE")
+    placement_group_key = optional(string, null)
+    single_group        = optional(bool, false)
+    min_capacity        = optional(number, 0)
     max_capacity        = number
-    os_config           = optional(map(any))
-    ultra_ssd           = optional(bool)
-    placement_group_key = optional(string)
-    max_pods            = optional(number)
-    max_surge           = optional(string)
-    labels              = optional(map(string))
+    max_pods            = optional(number, null)
+    max_surge           = optional(string, "10%")
+    labels              = optional(map(string), {})
     taints = optional(list(object({
       key    = string
       value  = string
       effect = string
-    })))
-    tags = optional(map(string))
+    })), [])
+    os_config = optional(object({
+      sysctl = optional(map(any), {})
+    }), {})
+    tags = optional(map(string), {})
   }))
   nullable = false
   default  = {}
+
+  validation {
+    condition     = alltrue([for k, v in var.node_groups : length(k) <= 10])
+    error_message = "Node group names must be 10 characters or less."
+  }
+
+  validation {
+    condition     = alltrue([for k, v in var.node_groups : contains(["amd64", "arm64"], v.node_arch)])
+    error_message = "Node group architecture must be either \"amd64\" or \"arm64\"."
+  }
+
+  validation {
+    condition     = alltrue([for k, v in var.node_groups : contains(["ubuntu", "windows2019", "windows2022"], v.node_os)])
+    error_message = "Node group OS must be one of \"ubuntu\", \"windows2019\" (UNSUPPORTED) or \"windows2022\" (UNSUPPORTED)."
+  }
+
+  validation {
+    condition     = alltrue([for k, v in var.node_groups : contains(["gp", "gpd", "mem", "memd", "cpu", "stor"], v.node_type)])
+    error_message = "Node group type must be one of \"gp\", \"gpd\", \"mem\", \"memd\", \"cpu\" or \"stor\"."
+  }
+
+  validation {
+    condition     = alltrue([for k, v in var.node_groups : contains(["NONE", "KUBELET", "HOST_PATH"], v.temp_disk_mode)])
+    error_message = "Temp disk mode must be one of \"NONE\", \"KUBELET\", \"HOST_PATH\"."
+  }
+
+  validation {
+    condition     = alltrue([for k, v in var.node_groups : contains(["NONE", "PV", "HOST_PATH"], v.nvme_mode)])
+    error_message = "NVMe mode must be one of \"NONE\", \"PV\", \"HOST_PATH\"."
+  }
+
+  validation {
+    condition     = alltrue([for k, v in var.node_groups : length(coalesce(v.placement_group_key, "_")) <= 11 && v.placement_group_key != ""])
+    error_message = "Node group placement key must be between 1 and 11 characters"
+  }
+
+  validation {
+    condition     = alltrue([for k, v in var.node_groups : v.max_pods == null || (coalesce(v.max_pods, 110) >= 12 && coalesce(v.max_pods, 110) <= 110)])
+    error_message = "Node group max pods must either be null or between 12 & 110."
+  }
+
+  validation {
+    condition     = alltrue([for k, v in var.node_groups : can(tonumber(replace(v.max_surge, "%", "")))])
+    error_message = "Node group max surge must either be a number or a percent; e.g. 1 or 10%."
+  }
 }
 
 variable "core_services_config" {

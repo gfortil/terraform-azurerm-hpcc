@@ -13,7 +13,7 @@ module "hpcc" {
   source = "../../../opinionated/opinionated-terraform-azurerm-hpcc"
 
   log_access_role_assignment = {
-    enabled   = true
+    enabled   = false
     scope     = null
     object_id = null
   }
@@ -26,12 +26,12 @@ module "hpcc" {
 
   node_tuning_containers = var.node_tuning_containers
 
+  helm_chart_version = var.helm_chart_version
+
   hpcc_container = {
-    image_name           = var.hpcc_container.image_name
-    image_root           = var.hpcc_container.image_root
-    version              = var.hpcc_container.version
-    custom_chart_version = var.hpcc_container != null ? var.hpcc_container.custom_chart_version : null
-    custom_image_version = var.hpcc_container != null ? var.hpcc_container.custom_image_version : null
+    image_name = var.hpcc_container.image_name
+    image_root = var.hpcc_container.image_root
+    version    = var.hpcc_container.version
   }
 
   hpcc_container_registry_auth = var.hpcc_container_registry_auth != null ? {
@@ -60,7 +60,7 @@ module "hpcc" {
   }
 
   data_storage_config = {
-    internal = local.external_storage_config == null ? {
+    internal = local.external_storage_accounts == null ? {
       blob_nfs = {
         data_plane_count = var.data_storage_config.internal.blob_nfs.data_plane_count
         storage_account_settings = {
@@ -83,7 +83,7 @@ module "hpcc" {
 
   enable_node_tuning = var.enable_node_tuning
 
-  external_storage_config = local.external_storage_config
+  external_storage_accounts = local.external_storage_accounts
 
   spill_volumes                = var.spill_volumes
   roxie_config                 = var.roxie_config
@@ -112,4 +112,6 @@ module "hpcc" {
   helm_chart_timeout = var.helm_chart_timeout
   # helm_chart_files_overrides = concat(var.helm_chart_files_overrides, fileexists("${path.module}/modules/logging/data/logaccess_body.yaml") ? ["${path.module}/modules/logging/data/logaccess_body.yaml"] : [])
   ldap_config = var.ldap_config
+
+  expose_services = var.expose_services
 }

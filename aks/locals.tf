@@ -37,7 +37,13 @@ locals {
     "cluster_id" : "${module.aks.cluster_id}",
     "resource_group_name" : "${module.resource_groups["azure_kubernetes_service"].name}"
     "location" : "${local.location}"
+    "cluster_identity" : "${module.aks.cluster_identity}"
   })
+
+  virtual_network_resource_group_name = try(var.use_existing_vnet.resource_group_name, local.get_vnet_config.resource_group_name)
+  virtual_network_name                = try(var.use_existing_vnet.name, local.get_vnet_config.name)
+  subnet_name                         = try(var.use_existing_vnet.subnets.aks.name, "aks-hpcc-private")
+  route_table_name                    = try(var.use_existing_vnet.route_table_name, local.get_vnet_config.route_table_name)
 
   runbook      = { for rb in var.runbook : "${rb.runbook_name}" => rb }
   current_time = timestamp()

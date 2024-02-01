@@ -7,3 +7,8 @@ output "eclwatch" {
   description = "Print the ECL Watch domain out."
   value       = local.svc_domains.eclwatch
 }
+
+output "eclqueries" {
+  description = "Print the ECLQueries domain out."
+  value       = local.svc_domains.eclqueries
+}

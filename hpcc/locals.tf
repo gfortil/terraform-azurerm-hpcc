@@ -20,12 +20,16 @@ locals {
   tags = merge(var.metadata.additional_tags, { "owner" = var.owner.name, "owner_email" = var.owner.email })
 
   # external_services_storage_exists = fileexists("${path.module}/modules/storage/data/config.json") || var.external_services_storage_config != null
+  external_storage_exists = fileexists("../storage/data/config.json") || var.external_storage_accounts != null
 
   get_vnet_config    = fileexists("../vnet/data/config.json") ? jsondecode(file("../vnet/data/config.json")) : null
   get_aks_config     = fileexists("../aks/data/config.json") ? jsondecode(file("../aks/data/config.json")) : null
   get_storage_config = local.external_storage_exists ? jsondecode(file("../storage/data/config.json")) : null
 
-  external_storage_exists = fileexists("../storage/data/config.json") || var.external_storage_config != null
+  virtual_network_resource_group_name = try(var.use_existing_vnet.resource_group_name, local.get_vnet_config.resource_group_name)
+  virtual_network_name                = try(var.use_existing_vnet.name, local.get_vnet_config.name)
+  subnet_name                         = try(var.use_existing_vnet.subnets.aks.name, "aks-hpcc-private")
+  route_table_name                    = try(var.use_existing_vnet.route_table_name, local.get_vnet_config.route_table_name)
 
   subnet_ids = try({
     for k, v in var.use_existing_vnet.subnets : k => "/subscriptions/${data.azurerm_client_config.current.subscription_id}/resourceGroups/${var.use_existing_vnet.resource_group_name}/providers/Microsoft.Network/virtualNetworks/${var.use_existing_vnet.name}/subnets/${v.name}"
@@ -42,8 +46,8 @@ locals {
 
   hpcc_namespace = var.hpcc_namespace.existing_namespace != null ? var.hpcc_namespace.existing_namespace : var.hpcc_namespace.create_namespace == true ? kubernetes_namespace.hpcc[0].metadata[0].name : fileexists("${path.module}/logging/data/hpcc_namespace.txt") ? file("${path.module}/logging/data/hpcc_namespace.txt") : "default"
 
-  external_storage_config = local.get_storage_config != null && var.ignore_external_storage == false ? [
-    for plane in local.get_storage_config.external_storage_config :
+  external_storage_accounts = local.get_storage_config != null && var.ignore_external_storage == false ? [
+    for plane in local.get_storage_config.external_storage_accounts :
     {
       category        = plane.category
       container_name  = plane.container_name
@@ -56,8 +60,11 @@ locals {
       storage_type    = plane.storage_type
       prefix_name     = plane.prefix_name
     }
-  ] : []
+  ] : null
 
-  svc_domains   = { eclwatch = var.auto_launch_svc.eclwatch ? "https://eclwatch-${local.hpcc_namespace}.${local.domain}:18010" : null }
+  svc_domains = {
+    eclwatch   = var.auto_launch_services.eclwatch ? "https://eclwatch-${local.hpcc_namespace}.${local.domain}:${module.hpcc.exposed_services.eclwatch.service.servicePort}" : null
+    eclqueries = var.auto_launch_services.eclqueries ? "https://eclqueries-${local.hpcc_namespace}.${local.domain}:${module.hpcc.exposed_services.eclqueries.service.servicePort}" : null
+  }
   is_windows_os = substr(pathexpand("~"), 0, 1) == "/" ? false : true
 }

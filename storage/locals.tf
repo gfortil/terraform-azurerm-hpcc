@@ -11,7 +11,7 @@ locals {
     }
   ]
 
-  subnet_ids = [
+  subnet_ids = concat([
     for v in local.virtual_network : "/subscriptions/${v.subscription_id != null ? v.subscription_id : data.azurerm_client_config.current.subscription_id}/resourceGroups/${v.resource_group_name}/providers/Microsoft.Network/virtualNetworks/${v.vnet_name}/subnets/${v.subnet_name}"
-  ]
+  ], var.allow_subnet_ids)
 }

@@ -64,3 +64,16 @@ variable "resource_groups" {
     }
   }
 }
+
+variable "azure_auth" {
+  description = "Azure authentication"
+  type = object({
+    AAD_CLIENT_ID     = optional(string)
+    AAD_CLIENT_SECRET = optional(string)
+    AAD_TENANT_ID     = optional(string)
+    AAD_OBJECT_ID     = optional(string)
+    SUBSCRIPTION_ID   = string
+  })
+
+  nullable = false
+}

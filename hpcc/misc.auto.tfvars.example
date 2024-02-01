@@ -20,8 +20,8 @@ metadata = {
 # # disable_naming_conventions - Disable naming conventions
 # # disable_naming_conventions = true 
 
-# # auto_launch_svc - Automatically launch ECLWatch web interface.
-auto_launch_svc = {
+# # auto_launch_services - Automatically launch ECLWatch web interface.
+auto_launch_services = {
   eclwatch = true
 }
 

@@ -1,27 +1,7 @@
-# resource "kubernetes_secret" "private_docker_registry" {
-#   count = can(var.registry.server) && can(var.registry.username) && can(var.registry.password) ? 1 : 0
-#   metadata {
-#     name = "docker-cfg"
-#   }
-#   type = "kubernetes.io/dockerconfigjson"
-#   data = {
-#     ".dockerconfigjson" = jsonencode({
-#       auths = {
-#         "${var.registry.server}" = {
-#           "username" = var.registry.username
-#           "password" = var.registry.password
-#           "email"    = var.admin.email
-#           "auth"     = base64encode("${var.registry.username}:${var.registry.password}")
-#         }
-#       }
-#     })
-#   }
-# }
-
 module "aks" {
   depends_on = [random_string.string]
-  source     = "github.com/gfortil/terraform-azurerm-aks.git?ref=HPCC-27615"
-  # source = "../../../terraform-azurerm-aks"
+  # source     = "github.com/gfortil/terraform-azurerm-aks.git?ref=HPCC-27615"
+  source = "../../terraform-azurerm-aks"
 
   providers = {
     kubernetes = kubernetes.default
@@ -40,19 +20,28 @@ module "aks" {
 
   cluster_endpoint_access_cidrs = var.cluster_endpoint_access_cidrs
 
-  virtual_network_resource_group_name = try(var.use_existing_vnet.resource_group_name, local.get_vnet_config.resource_group_name)
-  virtual_network_name                = try(var.use_existing_vnet.name, local.get_vnet_config.name)
-  subnet_name                         = try(var.use_existing_vnet.subnets.aks.name, "aks-hpcc-private")
-  route_table_name                    = try(var.use_existing_vnet.route_table_name, local.get_vnet_config.route_table_name)
+  virtual_network_resource_group_name = local.virtual_network_resource_group_name
+  virtual_network_name                = local.virtual_network_name
+  subnet_name                         = local.subnet_name
+  route_table_name                    = local.route_table_name
 
   dns_resource_group_lookup = { "${var.internal_domain}" = var.dns_resource_group }
 
-  admin_group_object_ids = [data.azuread_group.subscription_owner.object_id]
+  admin_group_object_ids = [var.azure_auth.AAD_OBJECT_ID]
 
-  rbac_bindings = var.rbac_bindings
+  rbac_bindings = {
+    cluster_admin_users = merge(var.rbac_bindings.cluster_admin_users, {
+      "service_principal" = data.azurerm_client_config.current.object_id
+    })
+
+    cluster_view_users  = merge(var.rbac_bindings.cluster_view_users, {})
+    cluster_view_groups = concat(var.rbac_bindings.cluster_view_groups, [])
+  }
 
   availability_zones = var.availability_zones
-  node_groups        = var.node_groups
+
+  system_nodes = var.system_nodes
+  node_groups  = var.node_groups
 
   core_services_config = {
     alertmanager = var.core_services_config.alertmanager

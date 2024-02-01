@@ -17,32 +17,40 @@ variable "owner" {
   }
 }
 
-# variable "azure_auth" {
-#   description = "Azure authentication"
-#   type = object({
-#     AAD_CLIENT_ID     = optional(string)
-#     AAD_CLIENT_SECRET = optional(string)
-#     AAD_TENANT_ID     = optional(string)
-#     AAD_PRINCIPAL_ID  = optional(string)
-#     SUBSCRIPTION_ID   = string
-#   })
+variable "azure_auth" {
+  description = "Azure authentication"
+  type = object({
+    AAD_CLIENT_ID     = optional(string)
+    AAD_CLIENT_SECRET = optional(string)
+    AAD_TENANT_ID     = optional(string)
+    AAD_OBJECT_ID     = optional(string)
+    SUBSCRIPTION_ID   = string
+  })
 
-#   nullable = false
-# }
-
-variable "expose_services" {
-  description = "Expose ECLWatch and elastic4hpcclogs to the Internet. This is not secure. Please consider before using it."
-  type        = bool
-  default     = false
+  nullable = false
 }
 
-variable "auto_launch_svc" {
-  description = "Auto launch HPCC services."
+variable "expose_services" {
+  description = "Make HPCC services accessible through the internet."
   type = object({
-    eclwatch = bool
+    eclwatch   = bool
+    eclqueries = bool
   })
   default = {
-    eclwatch = true
+    eclqueries = false
+    eclwatch   = true
+  }
+}
+
+variable "auto_launch_services" {
+  description = "Auto launch HPCC services."
+  type = object({
+    eclwatch   = bool
+    eclqueries = bool
+  })
+  default = {
+    eclwatch   = false
+    eclqueries = false
   }
 }
 
@@ -137,6 +145,12 @@ variable "helm_chart_files_overrides" {
   default     = []
 }
 
+variable "helm_chart_version" {
+  description = "Version of the HPCC Helm Chart to use."
+  type        = string
+  default     = null
+}
+
 variable "helm_chart_timeout" {
   description = "Helm timeout for hpcc chart."
   type        = number
@@ -146,11 +160,9 @@ variable "helm_chart_timeout" {
 variable "hpcc_container" {
   description = "HPCC container information (if version is set to null helm chart version is used)."
   type = object({
-    image_name           = optional(string, "platform-core")
-    image_root           = optional(string, "hpccsystems")
-    version              = optional(string, "latest")
-    custom_chart_version = optional(string)
-    custom_image_version = optional(string)
+    image_name = optional(string, "platform-core")
+    image_root = optional(string, "hpccsystems")
+    version    = optional(string, "latest")
   })
 
   default = {
@@ -533,7 +545,6 @@ variable "eclccserver_settings" {
     })
     listen_queue          = optional(list(string), [])
     childProcessTimeLimit = optional(number, 10)
-    gitUsername           = optional(string, "")
     legacySyntax          = optional(bool, false)
     options = optional(list(object({
       name  = string
@@ -953,7 +964,7 @@ variable "data_storage_config" {
   }
 }
 
-variable "external_storage_config" {
+variable "external_storage_accounts" {
   description = "External services storage config."
   type = list(object({
     category        = string

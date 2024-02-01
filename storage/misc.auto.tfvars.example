@@ -19,4 +19,4 @@ metadata = {
 
 # disable_naming_conventions = false # true will enforce all the arguments of the metadata block above
 
-# Provide an existing virtual network deployed outside of this project
+# allow_subnet_ids = ["subnet1", "subnet2"]
